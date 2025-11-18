@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Rayls** is an event-driven, serverless payment gateway that:
+**Fountain** is a monorepo containing:
+
+**Backend (Rayls)** - Event-driven, serverless payment gateway that:
 - Receives PIX payments from Asaas webhooks
 - Processes events asynchronously with complete audit trail (event sourcing)
 - Records transactions on blockchain using viem.js
@@ -12,12 +14,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Uses Supabase PostgreSQL for data and event store
 - Logs everything persistently to database
 
+**Website** - Frontend (Coming soon)
+- Marketing site, payment dashboard, analytics
+
 **Architecture**: NestJS backend deployed as Supabase Edge Functions with event-driven processing via Supabase Realtime pub/sub.
+
+## Repository Structure
+
+```
+fountain-raylshack/
+├── backend/              # NestJS backend + Supabase Edge Functions
+│   ├── src/             # TypeScript source code
+│   ├── supabase/        # Edge Functions + Migrations
+│   ├── docs/            # Technical documentation
+│   └── README.md
+├── website/             # Frontend (Coming soon)
+└── README.md            # Main README
+```
 
 ## Common Commands
 
+**Note**: All backend commands must be run from the `backend/` directory.
+
 ### Building & Development
 ```bash
+cd backend                # Navigate to backend directory
 pnpm install              # Install dependencies (uses pnpm 10.19+)
 pnpm run build            # Compile TypeScript to dist/
 pnpm run start            # Run production build from dist/
@@ -29,6 +50,7 @@ pnpm run format:check     # Check formatting without changes
 
 ### Supabase & Deployment
 ```bash
+cd backend                # Navigate to backend directory
 supabase start            # Start local Supabase (requires Docker)
 supabase link --project-ref <id>  # Link to your Supabase project
 supabase status           # Check connection status
@@ -42,6 +64,8 @@ supabase migration up     # Run migrations locally
 
 ### Common Development Tasks
 ```bash
+cd backend                # Navigate to backend directory
+
 # Validate environment setup
 pnpm run build
 
@@ -83,37 +107,37 @@ Blockchain Transaction (viem.js) → Smart Contract
 
 ### Folder Organization
 
-**`src/core/`** - Fundamental services used everywhere
+**`backend/src/core/`** - Fundamental services used everywhere
 - `config/env.service.ts` - Environment variable management with Zod validation. Validates at startup and fails-fast if any var is missing. Use `EnvService.get()` or `getSupabaseConfig()`, `getBlockchainConfig()`, `getAsaasConfig()`.
 - `logger/logger.service.ts` - Structured logging to console (Pino) and Supabase `logs` table. Creates contextual loggers with `createLogger('Context')`. All logs are buffered and flushed every 5 seconds.
 - `events/domain.events.ts` - Domain event classes (PaymentReceivedEvent, BlockchainTransactionConfirmedEvent, etc). Extend `DomainEvent` base class. Each event is immutable and includes aggregate ID for event sourcing.
 - `events/event-publisher.ts` - Publishes events to event store (database) and Supabase Realtime channels. Handles pub/sub and event persistence.
 - `errors/app.exceptions.ts` - Custom exception hierarchy. Always extend `AppException`. Includes error codes, status codes, and metadata. Used for standardized error handling.
 
-**`src/database/`** - Data access layer
+**`backend/src/database/`** - Data access layer
 - `repositories/base.repository.ts` - Generic CRUD operations for any Supabase table. Extend this for domain-specific repositories. Provides findById, findAll, create, update, delete, upsert, count methods.
 
-**`src/blockchain/`** - Smart contract interactions
+**`backend/src/blockchain/`** - Smart contract interactions
 - `repositories/base-contract.repository.ts` - Abstract base for contract operations using viem.js. Provides ABI loading from files and simplified contract interaction patterns.
 - `repositories/payment-contract.repository.ts` - Concrete implementation for Payment contract. Methods like `recordPayment()`, `confirmPayment()`, `getPayment()`.
 - `abis/Payment.json` - Smart contract ABI file. Add new contract ABIs here.
 
-**`src/asaas/`** - Asaas payment provider integration
+**`backend/src/asaas/`** - Asaas payment provider integration
 - `validators/webhook.validator.ts` - Validates Asaas webhook signatures using HMAC-SHA1. Call `validateAndParse()` to validate and deserialize webhook payload.
 - `types.ts` - TypeScript interfaces for Asaas API responses, payment statuses, webhook events, etc. Use these for type safety.
 
-**`src/main.ts`** - Application bootstrap
+**`backend/src/main.ts`** - Application bootstrap
 - Initializes NestJS
 - Sets up Swagger documentation
 - Configures global validation pipes
 - Handles graceful shutdown with log flushing
 
-**`src/app.module.ts`** - Root NestJS module
+**`backend/src/app.module.ts`** - Root NestJS module
 - Imports all services
 - Provides core services to injection system
 - All modules should import this to access shared services
 
-**`src/app.controller.ts`** - Health check endpoints
+**`backend/src/app.controller.ts`** - Health check endpoints
 - GET `/health` - Returns service status
 - GET `/ready` - Readiness probe
 
@@ -199,11 +223,11 @@ Each feature deployed independently (no accumulating features):
 5. **Phase 4** - blockchain-tx Edge Function
 6. **Phase 5** - Production hardening
 
-See DEPLOYMENT_ROADMAP.md for detailed phases.
+See backend/docs/DEPLOYMENT_ROADMAP.md for detailed phases.
 
 ## Supabase Edge Functions
 
-Functions are Deno-based TypeScript deployed to Supabase. Located in `supabase/functions/`:
+Functions are Deno-based TypeScript deployed to Supabase. Located in `backend/supabase/functions/`:
 
 - `hello-world/` - Validation function (test deployment)
 - `webhooks-asaas/` - Receives Asaas webhooks (Phase 1)
@@ -261,21 +285,26 @@ Before deploying:
 
 ## Key Files to Know
 
-- **DEPLOYMENT_ROADMAP.md** - Detailed phase-by-phase deployment guide
-- **SETUP_GUIDE.md** - Development environment setup and troubleshooting
-- **ARCHITECTURE.md** - Comprehensive design patterns and data flows
-- **CHECKPOINT_STATUS.md** - Current project status
-- **HELLO_WORLD_DEPLOY.md** - First deployment validation
-- **.env.example** - Required environment variables
+- **backend/docs/DEPLOYMENT_ROADMAP.md** - Detailed phase-by-phase deployment guide
+- **backend/docs/SETUP_GUIDE.md** - Development environment setup and troubleshooting
+- **backend/docs/ARCHITECTURE.md** - Comprehensive design patterns and data flows
+- **backend/docs/CHECKPOINT_STATUS.md** - Current project status
+- **backend/docs/HELLO_WORLD_DEPLOY.md** - First deployment validation
+- **backend/docs/START_HERE.md** - First steps guide
+- **backend/docs/PROJECT_SUMMARY.md** - Project overview and features
+- **backend/docs/README.md** - Documentation index
+- **backend/.env.example** - Required environment variables
+- **backend/README.md** - Backend-specific README
+- **README.md** - Main project README (monorepo)
 
 ## When Adding New Features
 
-1. **Add domain events** in `src/core/events/domain.events.ts`
-2. **Create repositories** extending `BaseRepository<T>` in `src/database/repositories/`
+1. **Add domain events** in `backend/src/core/events/domain.events.ts`
+2. **Create repositories** extending `BaseRepository<T>` in `backend/src/database/repositories/`
 3. **Implement handlers** to subscribe to events
-4. **Create Edge Functions** in `supabase/functions/` if user-facing
-5. **Add database migrations** in `supabase/migrations/`
-6. **Document** in DEPLOYMENT_ROADMAP.md as new phase
+4. **Create Edge Functions** in `backend/supabase/functions/` if user-facing
+5. **Add database migrations** in `backend/supabase/migrations/`
+6. **Document** in backend/docs/DEPLOYMENT_ROADMAP.md as new phase
 7. **Deploy incrementally** - each feature is independent
 
 ## Performance & Scaling

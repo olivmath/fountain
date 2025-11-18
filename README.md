@@ -1,255 +1,183 @@
-# Rayls - Event-Driven Payment Gateway
+# Fountain - Rayls Payment Gateway
 
-**Fountain Project** - A serverless, event-driven payment gateway combining Asaas PIX integration with blockchain transactions, built on Supabase Edge Functions.
+**Monorepo** for Rayls, an event-driven, serverless payment gateway combining Asaas PIX integration with blockchain transactions.
 
-## Overview
+## 🏗️ Project Structure
 
-Rayls is a modern payment processing backend that:
+```
+fountain-raylshack/
+├── backend/              # NestJS backend + Supabase Edge Functions
+│   ├── src/             # TypeScript source code
+│   ├── supabase/        # Edge Functions + Migrations
+│   ├── docs/            # Technical documentation
+│   └── README.md        # Backend-specific guide
+│
+├── website/             # Frontend (Coming soon)
+│   └── README.md        # Website-specific guide
+│
+├── CLAUDE.md            # Instructions for Claude Code
+└── README.md            # This file
+```
 
-- 🎯 **Receives PIX payments** from Asaas webhook notifications
-- ⚙️ **Processes events** asynchronously with complete audit trail
-- ⛓️ **Records transactions** on blockchain (EVM compatible)
-- 📊 **Stores everything** as immutable events for compliance
-- 🚀 **Deploys incrementally** to Supabase Edge Functions
-- 📝 **Logs everything** persistently to PostgreSQL
+## 📦 Packages
 
-## Quick Start
+### Backend
+
+**Rayls** - Event-driven payment gateway
+
+- **Tech**: NestJS, TypeScript, Supabase, viem.js
+- **Features**: PIX payments, blockchain recording, event sourcing
+- **Deployment**: Supabase Edge Functions (Deno runtime)
+- **Status**: Foundation complete, ready for deployment
+
+[→ Backend README](./backend/README.md)
+
+[→ Backend Documentation](./backend/docs/)
+
+### Website
+
+**Marketing & Dashboard** (Coming soon)
+
+- **Tech**: TBD (Next.js, React, etc.)
+- **Purpose**: Landing page, payment dashboard, analytics
+
+[→ Website README](./website/README.md)
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js v18+
-- pnpm v10+
+- Node.js 18+
+- pnpm 10+
 - Docker (for local Supabase)
+- Supabase CLI
 - Git
 
-### Setup
+### Get Started
 
 ```bash
-# 1. Clone and install
-cd rayls
+# Clone the repository
+git clone https://github.com/olivmath/fountain-raylshack.git
+cd fountain-raylshack
+
+# Set up backend
+cd backend
 pnpm install
-
-# 2. Configure environment
 cp .env.example .env
-nano .env  # Fill in your values
+# Edit .env with your credentials
 
-# 3. Start local Supabase
+# Start local Supabase
 supabase start
 
-# 4. Run migrations
-supabase migration up
-
-# 5. Start development server
+# Build and run
+pnpm run build
 pnpm run start:dev
-
-# 6. Visit Swagger docs
-open http://localhost:3000/api/docs
 ```
 
-## Project Structure
+## 📚 Documentation
 
-```
-src/
-├── core/              # Core services (config, logger, events, errors)
-├── database/          # Repository pattern for Supabase
-├── blockchain/        # Smart contract interactions with viem.js
-├── asaas/            # Asaas payment provider integration
-└── payments/         # Payment domain logic
+### Backend Documentation
 
-supabase/
-├── functions/        # Deno Edge Functions
-└── migrations/       # Database schema migrations
+Located in [`backend/docs/`](./backend/docs/):
 
-Documentation:
-├── DEPLOYMENT_ROADMAP.md  # Detailed step-by-step deployment guide
-├── SETUP_GUIDE.md         # Development environment setup
-├── ARCHITECTURE.md        # Design patterns and architecture
-```
+- [START_HERE.md](./backend/docs/START_HERE.md) - First steps guide
+- [ARCHITECTURE.md](./backend/docs/ARCHITECTURE.md) - System design & patterns
+- [DEPLOYMENT_ROADMAP.md](./backend/docs/DEPLOYMENT_ROADMAP.md) - Phase-by-phase deployment
+- [SETUP_GUIDE.md](./backend/docs/SETUP_GUIDE.md) - Development environment
+- [CHECKPOINT_STATUS.md](./backend/docs/CHECKPOINT_STATUS.md) - Current status
+- [PROJECT_SUMMARY.md](./backend/docs/PROJECT_SUMMARY.md) - Overview & features
+- [HELLO_WORLD_DEPLOY.md](./backend/docs/HELLO_WORLD_DEPLOY.md) - First deployment
 
-## Design Patterns
+[→ Full Backend Documentation](./backend/docs/README.md)
 
-### Repository Pattern (Database)
+## 🎯 Current Status
 
-Clean data access abstraction:
+**Phase**: Foundation Complete ✅
 
-```typescript
-const payment = await this.paymentRepository.findById(id);
-const payments = await this.paymentRepository.findByStatus('pending');
-await this.paymentRepository.create({ amount: 100, payer: '...' });
-```
+**Next Steps**:
+1. Deploy hello-world Edge Function (15 min)
+2. Phase 0 - Database setup (4 hours)
+3. Phase 1 - Asaas webhook integration (4 hours)
 
-### Repository Pattern (Blockchain)
+See [CHECKPOINT_STATUS.md](./backend/docs/CHECKPOINT_STATUS.md) for details.
 
-Smart contract interaction abstraction:
+## 🔧 Technology Stack
 
-```typescript
-const { txHash, wait } = await this.paymentContract.recordPayment(
-  paymentId,
-  amount,
-  payer,
-  description
-);
-await wait();  // Wait for confirmation
-```
+### Backend
+- **Framework**: NestJS 11
+- **Language**: TypeScript 5.9 (strict mode)
+- **Database**: Supabase PostgreSQL
+- **Blockchain**: viem.js 2.39
+- **Deployment**: Supabase Edge Functions
+- **Logging**: Pino
+- **Validation**: Zod
 
-### Event-Driven Architecture
+### Website (Planned)
+- TBD
 
-Decoupled, auditable event processing:
+## 🏛️ Architecture
 
-```typescript
-const event = new PaymentReceivedEvent(paymentId, amount, ...);
-await this.eventPublisher.publish(event);
+**Event-Driven** architecture with:
+- Event sourcing for complete audit trail
+- Repository pattern for clean data access
+- Serverless Edge Functions deployment
+- Real-time event processing via Supabase Realtime
 
-// Event stored in DB + published to subscribers
-this.eventPublisher.subscribeToEvent('payment.received', (event) => {
-  // Handle payment received
-});
-```
+See [ARCHITECTURE.md](./backend/docs/ARCHITECTURE.md) for details.
 
-### Event Sourcing
-
-Complete immutable history:
-
-```sql
-SELECT * FROM event_store
-WHERE aggregate_id = 'payment-123'
-ORDER BY timestamp ASC;
-
--- Shows: payment.received → payment.confirmed → blockchain.tx.initiated → blockchain.tx.confirmed
-```
-
-### EnvService (Validated Config)
-
-Type-safe environment management:
-
-```typescript
-// All env vars validated at startup with Zod schema
-const url = this.envService.get('SUPABASE_URL');
-const config = this.envService.getBlockchainConfig();
-
-// Fails fast if any required var missing
-```
-
-### LoggerService (Persistent Logging)
-
-Structured logging to console and database:
-
-```typescript
-const logger = this.loggerService.createLogger('PaymentService');
-logger.info('Payment received', { paymentId, amount });
-// Logged to console (pino) + Supabase logs table
-```
-
-## Deployment Strategy
-
-**Baby-steps approach**: Each feature is independently deployable
-
-See [DEPLOYMENT_ROADMAP.md](./DEPLOYMENT_ROADMAP.md) for complete details:
-
-- **Phase 0**: Database setup
-- **Phase 1**: Asaas webhook receiver
-- **Phase 2**: Payment processing
-- **Phase 3**: API endpoints
-- **Phase 4**: Blockchain integration
-- **Phase 5**: Production hardening
-
-## Key Features
-
-✅ **Event Sourcing** - Complete audit trail of all changes
-✅ **Repository Pattern** - Clean data and contract access
-✅ **Type Safety** - Full TypeScript with Zod validation
-✅ **Structured Logging** - Console + persistent database storage
-✅ **Error Handling** - Standardized exception hierarchy
-✅ **OpenAPI/Swagger** - Auto-generated API documentation
-✅ **Serverless Ready** - Deploys to Supabase Edge Functions
-✅ **Modular** - Easy to add new features and event handlers
-
-## Documentation
-
-- [DEPLOYMENT_ROADMAP.md](./DEPLOYMENT_ROADMAP.md) - Step-by-step deployment with baby-steps approach
-- [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Development environment setup and troubleshooting
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Design patterns, data flows, and design decisions
-
-## Available Scripts
+## 📋 Available Scripts
 
 ```bash
-pnpm run build           # Build TypeScript
-pnpm run start           # Run production build
-pnpm run start:dev       # Run with watch mode
-pnpm run lint            # Run ESLint
-pnpm run format          # Format with Prettier
-pnpm run format:check    # Check format without changes
-```
+# Backend
+cd backend
+pnpm install              # Install dependencies
+pnpm run build            # Build TypeScript
+pnpm run start:dev        # Run with watch mode
+pnpm run lint             # Lint code
+pnpm run format           # Format code
 
-## Database Schema
-
-Key tables:
-
-- `event_store` - Event sourcing store (append-only)
-- `logs` - Structured application logs
-- `payments` - Payment aggregates
-- `blockchain_transactions` - On-chain transaction tracking
-- `asaas_webhooks` - Webhook audit trail
-
-## Configuration
-
-Copy `.env.example` to `.env` and fill in:
-
-```env
 # Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-key
-SUPABASE_SERVICE_KEY=your-key
-
-# Asaas
-ASAAS_API_KEY=your-key
-ASAAS_WEBHOOK_SECRET=your-secret
-
-# Blockchain
-CHAIN_RPC_URL=https://mainnet.infura.io/v3/your-key
-CHAIN_ID=1
-PRIVATE_KEY=0x...
-CONTRACT_PAYMENT_ADDRESS=0x...
+supabase start            # Start local Supabase
+supabase functions serve  # Test Edge Functions locally
+supabase functions deploy # Deploy to production
 ```
 
-## Technology Stack
+## 🗺️ Roadmap
 
-- **Framework**: NestJS - Modern, scalable backend framework
-- **Language**: TypeScript - Type safety and better DX
-- **Database**: Supabase/PostgreSQL - Open-source, serverless
-- **Blockchain**: viem.js - Modern, type-safe EVM client
-- **Deployment**: Supabase Edge Functions - Serverless, fast
-- **Logging**: Pino - Fast, structured logging
-- **Validation**: Zod - Type-safe schema validation
-- **Documentation**: OpenAPI 3.0 - Standard API spec
+### Backend (4-5 weeks)
+- [x] Foundation & Core Services
+- [x] Documentation
+- [ ] Phase 0: Database Setup
+- [ ] Phase 1: Asaas Webhook Integration
+- [ ] Phase 2: Payment Processing
+- [ ] Phase 3: API Endpoints
+- [ ] Phase 4: Blockchain Integration
+- [ ] Phase 5: Production Hardening
 
-## Roadmap
+### Website
+- [ ] Planning & Design
+- [ ] Landing Page
+- [ ] Payment Dashboard
+- [ ] Analytics Dashboard
 
-- [x] Project initialization
-- [x] Core architecture setup
-- [x] EnvService with validation
-- [x] LoggerService with DB persistence
-- [x] Event definitions and event sourcing
-- [x] Repository pattern for database
-- [x] Contract repository for blockchain
-- [ ] Asaas webhook integration
-- [ ] Payment processing handlers
-- [ ] API endpoints
-- [ ] Blockchain transaction management
-- [ ] Production hardening
-- [ ] Monitoring and alerting
+## 🤝 Contributing
 
-## Contributing
+This is a monorepo. Each package has its own development workflow.
 
-1. Follow the deployment roadmap
-2. Each feature should be independently deployable
-3. Update logs and commit after each phase
-4. Test locally before deploying
+**Backend**: See [backend/README.md](./backend/README.md)
 
-## License
+**Website**: See [website/README.md](./website/README.md)
+
+## 📄 License
 
 ISC
 
-## Support
+## 🔗 Links
 
-See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for troubleshooting guide.
+- [Supabase Project](https://supabase.com)
+- [Asaas Dashboard](https://www.asaas.com)
+- [Backend Documentation](./backend/docs/)
+
+## 💡 For Claude Code
+
+See [CLAUDE.md](./CLAUDE.md) for project context and guidelines when working with this codebase.
