@@ -52,11 +52,8 @@ contract StablecoinFactory is Ownable {
 
     /**
      * @dev Constructor sets the initial owner
-     * @param initialOwner Address that will own the factory
      */
-    constructor(address initialOwner) Ownable(initialOwner) {
-        // Ownable constructor validates that initialOwner is not zero address
-    }
+    constructor() Ownable(msg.sender) {}
 
     /**
      * @dev Creates a new stablecoin
@@ -73,7 +70,10 @@ contract StablecoinFactory is Ownable {
     ) external onlyOwner returns (address stablecoinAddress) {
         require(bytes(name_).length > 0, "Factory: name cannot be empty");
         require(bytes(symbol_).length > 0, "Factory: symbol cannot be empty");
-        require(!stablecoinsBySymbol[symbol_].exists, "Factory: symbol already exists");
+        require(
+            !stablecoinsBySymbol[symbol_].exists,
+            "Factory: symbol already exists"
+        );
         require(decimals_ <= 18, "Factory: decimals too high");
 
         // Create new stablecoin with factory as the token owner
@@ -170,11 +170,9 @@ contract StablecoinFactory is Ownable {
      * @param symbol_ Symbol of the stablecoin
      * @return stablecoinAddress Address of the stablecoin
      */
-    function getStablecoinBySymbol(string memory symbol_)
-        external
-        view
-        returns (address stablecoinAddress)
-    {
+    function getStablecoinBySymbol(
+        string memory symbol_
+    ) external view returns (address stablecoinAddress) {
         require(
             stablecoinsBySymbol[symbol_].exists,
             "Factory: stablecoin with this symbol does not exist"
@@ -187,11 +185,9 @@ contract StablecoinFactory is Ownable {
      * @param symbol_ Symbol of the stablecoin
      * @return info StablecoinInfo struct containing all stablecoin data
      */
-    function getStablecoinInfoBySymbol(string memory symbol_)
-        external
-        view
-        returns (StablecoinInfo memory info)
-    {
+    function getStablecoinInfoBySymbol(
+        string memory symbol_
+    ) external view returns (StablecoinInfo memory info) {
         require(
             stablecoinsBySymbol[symbol_].exists,
             "Factory: stablecoin with this symbol does not exist"
@@ -204,11 +200,9 @@ contract StablecoinFactory is Ownable {
      * @param stablecoinAddress Address of the stablecoin
      * @return info StablecoinInfo struct containing all stablecoin data
      */
-    function getStablecoinInfoByAddress(address stablecoinAddress)
-        external
-        view
-        returns (StablecoinInfo memory info)
-    {
+    function getStablecoinInfoByAddress(
+        address stablecoinAddress
+    ) external view returns (StablecoinInfo memory info) {
         require(
             stablecoinsByAddress[stablecoinAddress].exists,
             "Factory: stablecoin does not exist"
@@ -220,7 +214,11 @@ contract StablecoinFactory is Ownable {
      * @dev Gets all created stablecoin addresses
      * @return addresses Array of all stablecoin addresses
      */
-    function getAllStablecoins() external view returns (address[] memory addresses) {
+    function getAllStablecoins()
+        external
+        view
+        returns (address[] memory addresses)
+    {
         return stablecoins;
     }
 
@@ -229,7 +227,9 @@ contract StablecoinFactory is Ownable {
      * @param symbol_ Symbol to check
      * @return exists True if stablecoin exists, false otherwise
      */
-    function stablecoinExists(string memory symbol_) external view returns (bool exists) {
+    function stablecoinExists(
+        string memory symbol_
+    ) external view returns (bool exists) {
         return stablecoinsBySymbol[symbol_].exists;
     }
 
@@ -238,11 +238,9 @@ contract StablecoinFactory is Ownable {
      * @param stablecoinAddress Address of the stablecoin
      * @return supply Total supply of the stablecoin
      */
-    function getStablecoinTotalSupply(address stablecoinAddress)
-        external
-        view
-        returns (uint256 supply)
-    {
+    function getStablecoinTotalSupply(
+        address stablecoinAddress
+    ) external view returns (uint256 supply) {
         require(
             stablecoinsByAddress[stablecoinAddress].exists,
             "Factory: stablecoin does not exist"
@@ -256,11 +254,10 @@ contract StablecoinFactory is Ownable {
      * @param account Address to check balance for
      * @return balance Balance of the account
      */
-    function getStablecoinBalance(address stablecoinAddress, address account)
-        external
-        view
-        returns (uint256 balance)
-    {
+    function getStablecoinBalance(
+        address stablecoinAddress,
+        address account
+    ) external view returns (uint256 balance) {
         require(
             stablecoinsByAddress[stablecoinAddress].exists,
             "Factory: stablecoin does not exist"
