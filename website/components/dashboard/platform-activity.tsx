@@ -1,18 +1,67 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { MetricCard } from './metric-card'
 import { TransactionsChart } from './transactions-chart'
+import type { DashboardApiResponse } from '@/lib/dashboard-types'
 
-export function PlatformActivity() {
+type PlatformActivityProps = {
+  data: DashboardApiResponse
+}
+
+export function PlatformActivity({ data }: PlatformActivityProps) {
   const [timeRange, setTimeRange] = useState('Custom')
 
-  const metrics = [
-    { label: 'Revenue', value: '$1,650,570.00', change: '12.3%', changeType: 'up' as const },
-    { label: 'On-ramp volume', value: '$21,650,570.00', change: '5%', changeType: 'up' as const },
-    { label: 'Off-ramp volume', value: '$8,650,570.00', change: '1.2%', changeType: 'down' as const },
-    { label: 'Transfer volume', value: '$4,650,570.00', change: '13.6%', changeType: 'up' as const },
-  ]
+  // Calculate metrics from real data
+  const metrics = useMemo(() => {
+    const totalDeposits = data.operations
+      .filter((op) => op.operation_type === 'deposit')
+      .reduce((sum, op) => sum + Number(op.amount || 0), 0)
+    
+    const totalWithdrawals = data.operations
+      .filter((op) => op.operation_type === 'withdraw')
+      .reduce((sum, op) => sum + Number(op.amount || 0), 0)
+    
+    const successfulDeposits = data.operations
+      .filter((op) => op.operation_type === 'deposit' && op.status === 'minted')
+      .length
+    
+    const successfulWithdrawals = data.operations
+      .filter((op) => op.operation_type === 'withdraw' && op.status === 'withdraw_successful')
+      .length
+
+    const totalOperations = data.operations.length
+    const successRate = totalOperations > 0 
+      ? ((successfulDeposits + successfulWithdrawals) / totalOperations * 100).toFixed(1)
+      : '0'
+
+    return [
+      { 
+        label: 'Total Volume', 
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalDeposits + totalWithdrawals),
+        change: `${successRate}%`, 
+        changeType: 'up' as const 
+      },
+      { 
+        label: 'Deposit Volume', 
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalDeposits),
+        change: `${successfulDeposits} ops`, 
+        changeType: 'up' as const 
+      },
+      { 
+        label: 'Withdraw Volume', 
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalWithdrawals),
+        change: `${successfulWithdrawals} ops`, 
+        changeType: totalWithdrawals > 0 ? 'down' as const : 'up' as const 
+      },
+      { 
+        label: 'Active Stablecoins', 
+        value: data.stablecoins.length.toString(),
+        change: `${data.stablecoins.filter(s => s.status === 'deployed').length} deployed`, 
+        changeType: 'up' as const 
+      },
+    ]
+  }, [data])
 
   const timeRanges = ['Custom', 'Today', 'Yesterday', '7D', '30D', '3M', '6M', '12M']
 
@@ -49,7 +98,7 @@ export function PlatformActivity() {
       </div>
 
       {/* Chart */}
-      <TransactionsChart />
+      <TransactionsChart data={data} />
     </div>
   )
 }

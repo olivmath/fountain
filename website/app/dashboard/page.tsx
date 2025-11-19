@@ -9,7 +9,10 @@ import { FirstStepsCard } from '@/components/dashboard/first-steps-card'
 import { PlatformActivity } from '@/components/dashboard/platform-activity'
 import { StablecoinKpis } from '@/components/dashboard/stablecoin-kpis'
 import { StablecoinsPanel } from '@/components/dashboard/stablecoins-panel'
-import { stablecoinsData } from '@/lib/stablecoins-data'
+import { OperationsTable } from '@/components/dashboard/operations-table'
+import { StatusBreakdown } from '@/components/dashboard/status-breakdown'
+import { ClientAnalytics } from '@/components/dashboard/client-analytics'
+import { useDashboardData } from '@/hooks/use-dashboard-data'
 
 const tabDescriptions: Record<string, { title: string; description: string }> = {
   Overview: {
@@ -33,6 +36,7 @@ const tabDescriptions: Record<string, { title: string; description: string }> = 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('Overview')
   const { title, description } = tabDescriptions[activeTab]
+  const { data, loading, error } = useDashboardData()
 
   return (
     <div className="flex h-screen bg-[#0B0E14] text-white">
@@ -41,22 +45,41 @@ export default function Dashboard() {
         <Header section={activeTab} />
         <main className="flex-1 overflow-auto bg-[#0F131C]">
           <div className="p-8 space-y-6">
-            {activeTab === 'Overview' && (
-              <>
-                <OverviewSection />
-                <PlatformActivity />
-              </>
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-white/60">Loading dashboard data...</div>
+              </div>
             )}
 
-            {activeTab === 'Stablecoins' && (
-              <>
-                <StablecoinKpis data={stablecoinsData} />
-                <StablecoinsPanel />
-              </>
+            {error && (
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
+                <p className="text-red-400">Error loading dashboard: {error}</p>
+              </div>
             )}
 
-            {activeTab !== 'Overview' && activeTab !== 'Stablecoins' && (
-              <SectionPlaceholder title={title} description={description} />
+            {!loading && !error && data && (
+              <>
+                {activeTab === 'Overview' && (
+                  <>
+                    <OverviewSection data={data} />
+                    <PlatformActivity data={data} />
+                    <StatusBreakdown data={data} />
+                    <OperationsTable data={data} />
+                  </>
+                )}
+
+                {activeTab === 'Stablecoins' && (
+                  <>
+                    <StablecoinKpis data={data} />
+                    <ClientAnalytics data={data} />
+                    <StablecoinsPanel data={data} />
+                  </>
+                )}
+
+                {activeTab !== 'Overview' && activeTab !== 'Stablecoins' && (
+                  <SectionPlaceholder title={title} description={description} />
+                )}
+              </>
             )}
           </div>
         </main>

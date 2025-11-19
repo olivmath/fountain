@@ -1,51 +1,102 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useMemo } from 'react'
 import { Info } from 'lucide-react'
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-const data = [
-  { month: 'Jan', line1: 280, line2: 150, line3: 200, line4: 220 },
-  { month: 'Feb', line1: 290, line2: 160, line3: 210, line4: 200 },
-  { month: 'Mar', line1: 300, line2: 170, line3: 220, line4: 190 },
-  { month: 'Apr', line1: 280, line2: 180, line3: 200, line4: 210 },
-  { month: 'May', line1: 290, line2: 190, line3: 230, line4: 200 },
-  { month: 'Jun', line1: 310, line2: 200, line3: 240, line4: 220 },
-  { month: 'Jul', line1: 320, line2: 210, line3: 250, line4: 230 },
-  { month: 'Aug', line1: 300, line2: 220, line3: 240, line4: 240 },
-  { month: 'Sep', line1: 280, line2: 200, line3: 220, line4: 250 },
-  { month: 'Oct', line1: 290, line2: 190, line3: 210, line4: 230 },
-]
+import { formatCurrencyBRL } from '@/lib/dashboard-transforms'
+import type { DashboardApiResponse } from '@/lib/dashboard-types'
 
-export function TransactionsChart() {
+export type TransactionsChartPoint = {
+  label: string
+  deposits: number
+  withdrawals: number
+  net: number
+}
+
+type TransactionsChartProps = {
+  data: DashboardApiResponse
+}
+
+export function TransactionsChart({ data }: TransactionsChartProps) {
+  // Process real data into chart format
+  const chartData = useMemo(() => {
+    // Group operations by date
+    const grouped = data.operations.reduce((acc, op) => {
+      const date = new Date(op.created_at).toLocaleDateString('pt-BR', { 
+        month: 'short', 
+        day: 'numeric' 
+      })
+      
+      if (!acc[date]) {
+        acc[date] = { deposits: 0, withdrawals: 0 }
+      }
+      
+      const amount = Number(op.amount || 0)
+      if (op.operation_type === 'deposit') {
+        acc[date].deposits += amount
+      } else {
+        acc[date].withdrawals += amount
+      }
+      
+      return acc
+    }, {} as Record<string, { deposits: number; withdrawals: number }>)
+    
+    // Convert to chart format and sort by date
+    return Object.entries(grouped)
+      .map(([label, values]) => ({
+        label,
+        deposits: values.deposits,
+        withdrawals: values.withdrawals,
+        net: values.deposits - values.withdrawals,
+      }))
+      .slice(-30) // Last 30 data points
+  }, [data.operations])
+
+  const hasData = chartData.length > 0
+
   return (
-    <div className="bg-[#111726] border border-white/5 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h4 className="text-lg font-semibold text-white">Number of transactions</h4>
-        <button className="text-white/40 hover:text-white/70 transition-colors">
-          <Info className="w-5 h-5" />
+    <div className="rounded-xl border border-white/5 bg-[#111726] p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.4em] text-white/40">volume</p>
+          <h4 className="mt-1 text-lg font-semibold text-white">Fluxo de depósitos e saques</h4>
+        </div>
+        <button className="text-white/40 transition-colors hover:text-white/70">
+          <Info className="h-5 w-5" />
         </button>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-          <XAxis dataKey="month" stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-          <YAxis stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'rgba(0,0,0,0.9)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              color: '#fff',
-            }}
-            labelStyle={{ color: 'rgba(255,255,255,0.8)' }}
-          />
-          <Line type="monotone" dataKey="line1" stroke="#6372BF" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="line2" stroke="#8b5cf6" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="line3" stroke="#ec4899" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="line4" stroke="#2C1E49" strokeWidth={2} dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
+      {hasData ? (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+            <XAxis dataKey="label" stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
+            <YAxis
+              stroke="rgba(255,255,255,0.5)"
+              tick={{ fill: 'rgba(255,255,255,0.7)' }}
+              tickFormatter={(value) => formatCurrencyBRL(value)}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'rgba(3, 5, 15, 0.95)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                color: '#fff',
+              }}
+              formatter={(value, name) => [formatCurrencyBRL(value as number), name === 'net' ? 'Volume líquido' : name === 'deposits' ? 'Depósitos' : 'Saques']}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="deposits" stroke="#22d3ee" strokeWidth={2} dot={false} name="Depósitos" />
+            <Line type="monotone" dataKey="withdrawals" stroke="#f97316" strokeWidth={2} dot={false} name="Saques" />
+            <Line type="monotone" dataKey="net" stroke="#a855f7" strokeWidth={2} dot={false} name="Volume líquido" />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="rounded-lg border border-dashed border-white/10 bg-[#0F131C] p-12 text-center text-white/50">
+          Nenhuma operação registrada ainda.
+        </div>
+      )}
     </div>
   )
 }
