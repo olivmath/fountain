@@ -186,6 +186,8 @@ serve(async (req: Request) => {
       symbol,
       status: "deployed",
       erc20_address: erc20Address,
+      total_supply,
+      current_supply: 0,
       created_at: new Date().toISOString(),
     }
 

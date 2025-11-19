@@ -109,6 +109,18 @@ export async function mintTokensForDeposit(operationId: string): Promise<{
       })
       .eq("operation_id", operationId)
 
+    // Update stablecoin current_supply
+    const { error: supplyError } = await supabase
+      .from("stablecoins")
+      .update({
+        current_supply: stablecoin.current_supply + operation.amount,
+      })
+      .eq("stablecoin_id", stablecoin.stablecoin_id)
+
+    if (supplyError) {
+      await log.warn("Failed to update current_supply", { error: supplyError.message })
+    }
+
     await publishEvent(
       createDomainEvent(operationId, "deposit.minted", {
         operationId,

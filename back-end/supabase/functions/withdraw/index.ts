@@ -168,6 +168,19 @@ serve(async (req: Request) => {
         })
         .eq("operation_id", operationId)
 
+      // Decrement stablecoin current_supply
+      const newCurrentSupply = Math.max(0, stablecoin.current_supply - amount)
+      const { error: supplyError } = await supabase
+        .from("stablecoins")
+        .update({
+          current_supply: newCurrentSupply,
+        })
+        .eq("stablecoin_id", stablecoin.stablecoin_id)
+
+      if (supplyError) {
+        await log2.warn("Failed to update current_supply", { error: supplyError.message })
+      }
+
       await publishEvent(
         createDomainEvent(operationId, "withdraw.tokens_burned", {
           operationId,

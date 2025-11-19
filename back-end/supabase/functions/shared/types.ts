@@ -37,6 +37,8 @@ export interface Stablecoin {
   symbol: string
   erc20_address: string | null
   status: "registered" | "deployed"
+  total_supply: number
+  current_supply: number
   created_at: string
   deployed_at: string | null
   updated_at: string
