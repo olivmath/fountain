@@ -13,6 +13,9 @@ import { OperationsTable } from '@/components/dashboard/operations-table'
 import { StatusBreakdown } from '@/components/dashboard/status-breakdown'
 import { ClientAnalytics } from '@/components/dashboard/client-analytics'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+import { EmptyState } from '@/components/ui/interactive-empty-state'
+import BoxLoader from '@/components/ui/box-loader'
+import { RefreshCw, TrendingUp, Database, AlertCircle, PlusCircle, Coins, Receipt } from 'lucide-react'
 
 const tabDescriptions: Record<string, { title: string; description: string }> = {
   Overview: {
@@ -46,33 +49,93 @@ export default function Dashboard() {
         <main className="flex-1 overflow-auto bg-[#0F131C]">
           <div className="p-8 space-y-6">
             {loading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-white/60">Loading dashboard data...</div>
+              <div className="flex flex-col items-center justify-center py-24 space-y-6">
+                <BoxLoader />
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold text-white">Loading data...</h3>
+                  <p className="text-sm text-white/60">Fetching real-time dashboard information</p>
+                </div>
               </div>
             )}
 
             {error && (
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
-                <p className="text-red-400">Error loading dashboard: {error}</p>
-              </div>
+              <EmptyState
+                theme="dark"
+                size="lg"
+                variant="error"
+                title="Error loading dashboard"
+                description={`Unable to connect to backend. ${error}`}
+                icons={[
+                  <AlertCircle key="1" className="h-6 w-6" />,
+                  <Database key="2" className="h-6 w-6" />,
+                  <RefreshCw key="3" className="h-6 w-6" />
+                ]}
+                action={{
+                  label: "Retry",
+                  icon: <RefreshCw className="h-4 w-4" />,
+                  onClick: () => window.location.reload()
+                }}
+              />
             )}
 
             {!loading && !error && data && (
               <>
                 {activeTab === 'Overview' && (
                   <>
-                    <OverviewSection data={data} />
-                    <PlatformActivity data={data} />
-                    <StatusBreakdown data={data} />
-                    <OperationsTable data={data} />
+                    {data.operations.length === 0 && data.stablecoins.length === 0 ? (
+                      <EmptyState
+                        theme="dark"
+                        size="lg"
+                        title="Welcome to Fountain Dashboard!"
+                        description="You don't have any stablecoins or operations yet. Start by creating your first stablecoin to track deposits and withdrawals in real-time."
+                        icons={[
+                          <Coins key="1" className="h-6 w-6" />,
+                          <PlusCircle key="2" className="h-6 w-6" />,
+                          <Receipt key="3" className="h-6 w-6" />
+                        ]}
+                        action={{
+                          label: "View documentation",
+                          icon: <TrendingUp className="h-4 w-4" />,
+                          onClick: () => window.open('https://github.com/olivmath/rayls', '_blank')
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <OverviewSection data={data} />
+                        <PlatformActivity data={data} />
+                        <StatusBreakdown data={data} />
+                        <OperationsTable data={data} />
+                      </>
+                    )}
                   </>
                 )}
 
                 {activeTab === 'Stablecoins' && (
                   <>
-                    <StablecoinKpis data={data} />
-                    <ClientAnalytics data={data} />
-                    <StablecoinsPanel data={data} />
+                    {data.stablecoins.length === 0 ? (
+                      <EmptyState
+                        theme="dark"
+                        size="lg"
+                        title="No stablecoins created"
+                        description="Create your first stablecoin to start processing deposits and withdrawals in BRL. Use the API to register and deploy ERC20 tokens."
+                        icons={[
+                          <Coins key="1" className="h-6 w-6" />,
+                          <Database key="2" className="h-6 w-6" />,
+                          <PlusCircle key="3" className="h-6 w-6" />
+                        ]}
+                        action={{
+                          label: "View API docs",
+                          icon: <TrendingUp className="h-4 w-4" />,
+                          onClick: () => window.open('/back-end/CLAUDE.md', '_blank')
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <StablecoinKpis data={data} />
+                        <ClientAnalytics data={data} />
+                        <StablecoinsPanel data={data} />
+                      </>
+                    )}
                   </>
                 )}
 
