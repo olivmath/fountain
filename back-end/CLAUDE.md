@@ -4,27 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## 📝 RECENT UPDATES (2025-11-18)
+## 📝 RECENT UPDATES (2025-11-19)
 
 ### What Changed
-- ✅ **stablecoin-create** now deploys ERC20 tokens immediately on creation
-- ✅ **JWT disabled** - all functions use API key authentication (x-api-key header)
-- ✅ **Blockchain integration** - requires BLOCKCHAIN_RPC_URL, FACTORY_CONTRACT_ADDRESS, OWNER_ADDRESS, OWNER_PRIVATE_KEY, CHAIN_ID
-- ✅ **total_supply** - new required parameter for stablecoin-create
-- ✅ **Event sourcing** - publishes "stablecoin.registered" and "stablecoin.deployed" events
-- ✅ **Git remote updated** - now points to https://github.com/olivmath/fountain.git
+- ✅ **Client tracking** - Added `client_id` and `created_by_api_key_hash` to operations table
+- ✅ **Query functions** - Implemented 6 new read-only functions for data consultation
+- ✅ **CORS support** - All Edge Functions now support CORS and preflight requests
+- ✅ **Audit trail** - Every operation now tracks which API key created it
+- ✅ **Database schema** - Migration `20251119_add_client_tracking.sql` applied
+- ✅ **Environment variables** - Changed Supabase vars to DB_URL, ANON_KEY, SERVICE_ROLE_KEY (no SUPABASE_ prefix)
+
+### New Read-Only Query Functions
+1. **list-client-stablecoins** - Get all stablecoins for authenticated client
+2. **get-stablecoin-info** - Get details by stablecoin_id or erc20_address
+3. **list-stablecoin-operations** - Get operations for a specific stablecoin
+4. **list-client-operations** - Get all operations across all client stablecoins
+5. **get-operation-details** - Get full operation details + logs + events
+6. **get-stablecoin-stats** - Get aggregated stats (deposits, withdrawals, volume)
+
+### Query Dashboard
+- **File:** `query-dashboard.html` - Simple HTML UI for testing read-only functions
+- **API Key:** Pre-filled with `test-api-key-123`
+- **Usage:** Open in browser and select function to query
+
+### Database Changes
+```sql
+-- New columns in operations table:
+- client_id VARCHAR(255) -- For fast client filtering
+- created_by_api_key_hash VARCHAR(255) -- Audit trail of which key created operation
+
+-- New function:
+- get_client_id_from_stablecoin(stablecoin_id) -- Helper to get client from stablecoin
+```
 
 ### Commits
 ```
-7d1b5a5 chore: clean up temporary files and update gitignore
-d7bb5dd feat: implement ERC20 token deployment in stablecoin-create function
+fe4acaf feat: add client_id and api_key_hash tracking to operations for better auditability
+e6404a9 fix: add CORS support for read-only query functions
+beb8096 feat: add query dashboard HTML for testing read-only functions with test API key
+783dddb feat: implement 6 read-only query functions for stablecoins and operations
+adc5b55 refactor: rename Supabase env vars (SUPABASE_* -> DB_URL, ANON_KEY, SERVICE_ROLE_KEY)
 ```
-
-### Next Steps (URGENT)
-1. Provide blockchain credentials (Factory address, Owner address, Private key)
-2. Provide Asaas credentials (API key, Webhook key)
-3. Run `supabase secrets set` commands
-4. Deploy remaining functions (deposit-request, withdraw, webhook-deposit, webhook-withdraw)
 
 ---
 
