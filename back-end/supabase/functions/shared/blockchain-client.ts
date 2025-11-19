@@ -111,13 +111,16 @@ export class BlockchainClient {
         chainId: this.chainId,
       })
 
-      // Execute transaction
+      // Execute transaction with explicit gas settings
       console.log("[BlockchainClient] Calling writeContract with args:", [name, symbol, decimals])
       const hash = await this.walletClient.writeContract({
         address: this.factoryAddress as `0x${string}`,
         abi: FACTORY_ABI,
         functionName: "createStablecoin",
         args: [name, symbol, decimals as unknown as any],
+        gas: 3000000n, // 3M gas limit
+        maxFeePerGas: parseUnits("100", "gwei"),
+        maxPriorityFeePerGas: parseUnits("10", "gwei"),
       })
 
       console.log("[BlockchainClient] Transaction hash:", hash)
@@ -205,6 +208,9 @@ export class BlockchainClient {
           recipientAddress as `0x${string}`,
           amountWei,
         ],
+        gas: 3000000n,
+        maxFeePerGas: parseUnits("100", "gwei"),
+        maxPriorityFeePerGas: parseUnits("10", "gwei"),
       })
 
       console.log("[BlockchainClient] Mint transaction hash:", hash)
@@ -283,6 +289,9 @@ export class BlockchainClient {
           fromAddress as `0x${string}`,
           amountWei,
         ],
+        gas: 3000000n,
+        maxFeePerGas: parseUnits("100", "gwei"),
+        maxPriorityFeePerGas: parseUnits("10", "gwei"),
       })
 
       console.log("[BlockchainClient] Burn transaction hash:", hash)
