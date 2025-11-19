@@ -6,7 +6,8 @@ import {
   type PublicClient,
   type WalletClient,
 } from "https://esm.sh/viem@2.8.11"
-import { privateKeyToAccount } from "https://esm.sh/viem@2.8.11/accounts"
+// @ts-ignore - esm.sh transpilation issue
+import { privateKeyToAccount } from "https://esm.sh/viem@2.8.11/accounts.js"
 import { createLogger } from "./logger.ts"
 import { AppError, ErrorCode } from "./error-handler.ts"
 import type { ContractDeployResult, TransactionResult } from "./types.ts"
@@ -80,8 +81,8 @@ export class BlockchainClient {
       transport: http(rpcUrl),
     })
 
-    // Create account from private key for transaction signing
-    const account = privateKeyToAccount(ownerPrivateKey as `0x${string}`)
+    // Create account from private key for signing
+    const account = (privateKeyToAccount as any)(ownerPrivateKey as `0x${string}`)
 
     this.walletClient = createWalletClient({
       account,
