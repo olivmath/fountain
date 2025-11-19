@@ -12,26 +12,25 @@ import type { ContractDeployResult, TransactionResult } from "./types.ts"
 
 const logger = createLogger("blockchain-client")
 
-// Factory contract ABI (minimal)
+// Factory contract ABI - https://github.com/olivmath/fountain
 const FACTORY_ABI = [
   {
     name: "createStablecoin",
     type: "function",
     inputs: [
-      { name: "clientName", type: "string" },
-      { name: "symbol", type: "string" },
-      { name: "recipient", type: "address" },
-      { name: "amount", type: "uint256" },
+      { name: "name_", type: "string" },
+      { name: "symbol_", type: "string" },
+      { name: "decimals_", type: "uint8" },
     ],
-    outputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "stablecoinAddress", type: "address" }],
     stateMutability: "nonpayable",
   },
   {
     name: "mintTokens",
     type: "function",
     inputs: [
-      { name: "tokenAddress", type: "address" },
-      { name: "recipient", type: "address" },
+      { name: "stablecoinAddress", type: "address" },
+      { name: "to", type: "address" },
       { name: "amount", type: "uint256" },
     ],
     outputs: [],
@@ -41,8 +40,8 @@ const FACTORY_ABI = [
     name: "burnTokens",
     type: "function",
     inputs: [
-      { name: "tokenAddress", type: "address" },
-      { name: "account", type: "address" },
+      { name: "stablecoinAddress", type: "address" },
+      { name: "from", type: "address" },
       { name: "amount", type: "uint256" },
     ],
     outputs: [],
@@ -88,29 +87,15 @@ export class BlockchainClient {
   }
 
   async createStablecoin(
-    clientName: string,
+    name: string,
     symbol: string,
-    recipientAddress: string,
-    amount: number
-  ): Promise<ContractDeployResult> {
+    decimals: number = 18
+  ): Promise<string> {
     try {
       await logger.debug("Creating stablecoin on blockchain", {
-        clientName,
+        name,
         symbol,
-        recipientAddress,
-        amount,
-      })
-
-      const amountWei = parseUnits(amount.toString(), 18)
-
-      // Simulate transaction first
-      const { result } = await this.publicClient.simulateContract({
-        account: this.ownerAddress as `0x${string}`,
-        address: this.factoryAddress as `0x${string}`,
-        abi: FACTORY_ABI,
-        functionName: "createStablecoin",
-        args: [clientName, symbol, recipientAddress as `0x${string}`, amountWei],
-        chain: { id: this.chainId },
+        decimals,
       })
 
       // Execute transaction
@@ -119,7 +104,7 @@ export class BlockchainClient {
         address: this.factoryAddress as `0x${string}`,
         abi: FACTORY_ABI,
         functionName: "createStablecoin",
-        args: [clientName, symbol, recipientAddress as `0x${string}`, amountWei],
+        args: [name, symbol, decimals as unknown as any],
       })
 
       await logger.info("Stablecoin creation transaction sent", {
@@ -131,28 +116,32 @@ export class BlockchainClient {
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
 
       if (receipt.status !== "success") {
-        throw new AppError(
-          ErrorCode.BLOCKCHAIN_ERROR,
-          "Transaction failed",
-          500
-        )
+        throw new Error("Transaction failed")
       }
-
-      // Extract created token address from logs (simplified - would need to parse logs properly)
-      const tokenAddress = result as `0x${string}`
 
       await logger.info("Stablecoin created successfully", {
         txHash: hash,
         symbol,
-        tokenAddress,
         blockNumber: receipt.blockNumber.toString(),
       })
 
-      return {
-        address: tokenAddress,
-        txHash: hash,
-        blockNumber: Number(receipt.blockNumber),
+      // Parse logs to extract token address
+      const logs = receipt.logs
+      let tokenAddress: string | null = null
+
+      // Look for StablecoinCreated event (would need proper parsing)
+      // For now, return the contract address from logs
+      if (logs && logs.length > 0) {
+        // The first log should contain the created token address
+        // In a real scenario, you'd parse the event properly
+        tokenAddress = logs[0].address
       }
+
+      if (!tokenAddress) {
+        throw new Error("Could not extract token address from transaction receipt")
+      }
+
+      return tokenAddress
     } catch (err) {
       if (err instanceof AppError) throw err
       await logger.error("Error creating stablecoin", { symbol }, err as Error)
@@ -165,13 +154,13 @@ export class BlockchainClient {
   }
 
   async mintTokens(
-    tokenAddress: string,
+    stablecoinAddress: string,
     recipientAddress: string,
     amount: number
   ): Promise<TransactionResult> {
     try {
       await logger.debug("Minting tokens on blockchain", {
-        tokenAddress,
+        stablecoinAddress,
         recipientAddress,
         amount,
       })
@@ -184,7 +173,7 @@ export class BlockchainClient {
         abi: FACTORY_ABI,
         functionName: "mintTokens",
         args: [
-          tokenAddress as `0x${string}`,
+          stablecoinAddress as `0x${string}`,
           recipientAddress as `0x${string}`,
           amountWei,
         ],
@@ -192,7 +181,7 @@ export class BlockchainClient {
 
       await logger.info("Mint transaction sent", {
         txHash: hash,
-        tokenAddress,
+        stablecoinAddress,
       })
 
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
@@ -207,7 +196,7 @@ export class BlockchainClient {
 
       await logger.info("Tokens minted successfully", {
         txHash: hash,
-        tokenAddress,
+        stablecoinAddress,
         blockNumber: receipt.blockNumber.toString(),
       })
 
@@ -228,14 +217,14 @@ export class BlockchainClient {
   }
 
   async burnTokens(
-    tokenAddress: string,
-    accountAddress: string,
+    stablecoinAddress: string,
+    fromAddress: string,
     amount: number
   ): Promise<TransactionResult> {
     try {
       await logger.debug("Burning tokens on blockchain", {
-        tokenAddress,
-        accountAddress,
+        stablecoinAddress,
+        fromAddress,
         amount,
       })
 
@@ -247,15 +236,15 @@ export class BlockchainClient {
         abi: FACTORY_ABI,
         functionName: "burnTokens",
         args: [
-          tokenAddress as `0x${string}`,
-          accountAddress as `0x${string}`,
+          stablecoinAddress as `0x${string}`,
+          fromAddress as `0x${string}`,
           amountWei,
         ],
       })
 
       await logger.info("Burn transaction sent", {
         txHash: hash,
-        tokenAddress,
+        stablecoinAddress,
       })
 
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash })
@@ -270,7 +259,7 @@ export class BlockchainClient {
 
       await logger.info("Tokens burned successfully", {
         txHash: hash,
-        tokenAddress,
+        stablecoinAddress,
         blockNumber: receipt.blockNumber.toString(),
       })
 
