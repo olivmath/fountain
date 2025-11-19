@@ -6,7 +6,7 @@
 // DATABASE TYPES
 // ============================================
 
-import { z } from "zod"
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
 export const DepositRequestSchema = z.object({
   amount: z.number().positive(),
