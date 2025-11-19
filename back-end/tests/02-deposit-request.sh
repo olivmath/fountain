@@ -25,7 +25,8 @@ print_header "Test 1: Create valid deposit request"
 DEPOSIT_DATA=$(cat <<EOF
 {
   "stablecoin_id": "$STABLECOIN_ID",
-  "amount": 100
+  "amount": 100,
+  "cpf_cnpj": "52998224725"
 }
 EOF
 )

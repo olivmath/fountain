@@ -5,15 +5,18 @@ source "$(dirname "$0")/config.sh"
 
 print_header "STABLECOIN CREATE TEST"
 
+SYMBOL="TBR${RANDOM}"
+
 # Test 1: Valid stablecoin creation
 print_header "Test 1: Create valid stablecoin"
 STABLECOIN_DATA=$(cat <<EOF
 {
   "client_name": "Test Corretora",
-  "symbol": "TESTBRL1",
+  "symbol": "$SYMBOL",
   "client_wallet": "0x1234567890123456789012345678901234567890",
   "webhook": "https://webhook.example.com/events",
-  "total_supply": 1000000
+  "total_supply": 1000000,
+  "cpf_cnpj": "52998224725"
 }
 EOF
 )

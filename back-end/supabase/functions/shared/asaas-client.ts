@@ -7,6 +7,7 @@ const logger = createLogger("asaas-client")
 export interface CreateCustomerRequest {
   name: string
   cpfCnpj?: string
+  personType?: "FISICA" | "JURIDICA"
   email?: string
   phone?: string
   mobilePhone?: string
@@ -25,6 +26,7 @@ export interface CreatePixCodeRequest {
   value: number
   externalReference: string
   description: string
+  dueDate: string
 }
 
 export interface CreateTransferRequest {
@@ -114,14 +116,14 @@ export class AsaasClient {
       })
 
       if (!response.ok) {
-        const error = await response.text()
+        const errorText = await response.text()
         await logger.error("Asaas API error", {
           status: response.status,
-          error,
+          error: errorText,
         })
         throw new AppError(
           ErrorCode.ASAAS_ERROR,
-          `Failed to create PIX code: ${response.statusText}`,
+          `Failed to create PIX code: ${response.statusText}: ${errorText}`,
           response.status
         )
       }
@@ -308,3 +310,71 @@ export class AsaasClient {
 export function createAsaasClient(): AsaasClient {
   return new AsaasClient()
 }
+  async getCustomer(customerId: string): Promise<{ id: string; name: string; cpfCnpj?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/customers/${customerId}`, {
+        method: "GET",
+        headers: { "access_token": this.apiKey },
+      })
+      if (!response.ok) {
+        const error = await response.text()
+        await logger.error("Asaas API error", { status: response.status, error })
+        throw new AppError(ErrorCode.ASAAS_ERROR, `Failed to get customer: ${response.statusText}`, response.status)
+      }
+      const data = await response.json()
+      return data
+    } catch (err) {
+      if (err instanceof AppError) throw err
+      await logger.error("Error fetching customer", {}, err as Error)
+      throw new AppError(ErrorCode.ASAAS_ERROR, "Failed to fetch customer", 500)
+    }
+  }
+
+  async updateCustomer(customerId: string, payload: Partial<CreateCustomerRequest>): Promise<{ id: string; name: string; cpfCnpj?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/customers/${customerId}`, {
+        method: "PUT",
+        headers: { "access_token": this.apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const error = await response.text()
+        await logger.error("Asaas API error", { status: response.status, error })
+        throw new AppError(ErrorCode.ASAAS_ERROR, `Failed to update customer: ${response.statusText}`, response.status)
+      }
+      const data = await response.json()
+      return data
+    } catch (err) {
+      if (err instanceof AppError) throw err
+      await logger.error("Error updating customer", {}, err as Error)
+      throw new AppError(ErrorCode.ASAAS_ERROR, "Failed to update customer", 500)
+    }
+  }
+  async updateCustomer(id: string, payload: Partial<CreateCustomerRequest>): Promise<{ id: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/customers/${id}`, {
+        method: "PUT",
+        headers: {
+          "access_token": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        await logger.error("Asaas API error", { status: response.status, error: errorText })
+        throw new AppError(
+          ErrorCode.ASAAS_ERROR,
+          `Failed to update customer: ${response.statusText}`,
+          response.status
+        )
+      }
+      const data: { id: string } = await response.json()
+      await logger.info("Customer updated successfully", { customerId: data.id })
+      return data
+    } catch (err) {
+      if (err instanceof AppError) throw err
+      await logger.error("Error updating customer", {}, err as Error)
+      throw new AppError(ErrorCode.ASAAS_ERROR, "Failed to update customer", 500)
+    }
+  }

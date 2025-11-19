@@ -118,12 +118,46 @@ serve(async (req: Request) => {
       )
     }
 
+    const envMode = (Deno.env.get("ASAAS_ENV") || "sandbox").toLowerCase()
+    const cpfCnpj = (body as Record<string, unknown>).cpf_cnpj as string | undefined
+    if (cpfCnpj) {
+      try {
+        await asaasClient.updateCustomer(stablecoin.asaas_customer_id, {
+          cpfCnpj,
+          personType: cpfCnpj.replace(/\D/g, "").length === 14 ? "JURIDICA" : "FISICA",
+        })
+      } catch (err) {
+        await log.warn("Failed to update customer CPF/CNPJ", { asaasCustomerId: stablecoin.asaas_customer_id })
+      }
+    }
+    const customer = await asaasClient.getCustomer(stablecoin.asaas_customer_id)
+    let paymentCustomerId = stablecoin.asaas_customer_id
+    if (!customer.cpfCnpj && envMode === "sandbox") {
+      try {
+        await asaasClient.updateCustomer(stablecoin.asaas_customer_id, { cpfCnpj: "39053344705" })
+        const updated = await asaasClient.getCustomer(stablecoin.asaas_customer_id)
+        if (!updated.cpfCnpj) {
+          const created = await asaasClient.createCustomer({ name: stablecoin.client_name, cpfCnpj: "39053344705" })
+          paymentCustomerId = created.id
+        }
+      } catch (err) {
+        await log.warn("Failed to ensure sandbox CPF/CNPJ; will attempt with new customer", { asaasCustomerId: stablecoin.asaas_customer_id })
+        try {
+          const created = await asaasClient.createCustomer({ name: stablecoin.client_name, cpfCnpj: "39053344705" })
+          paymentCustomerId = created.id
+        } catch {}
+      }
+    }
+
+    const dueDate = new Date().toISOString().slice(0, 10)
+
     const asaasResponse = await asaasClient.createPixCode({
       billingType: "PIX",
-      customer: stablecoin.asaas_customer_id,
+      customer: paymentCustomerId,
       value: amount,
       externalReference: operationId,
       description: `Stablecoin ${stablecoin.symbol} - Deposit`,
+      dueDate,
     })
 
     // Insert operation into database

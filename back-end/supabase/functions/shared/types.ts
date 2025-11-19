@@ -10,6 +10,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
 export const DepositRequestSchema = z.object({
   amount: z.number().positive(),
+  cpf_cnpj: z.string().min(11).max(14).optional(),
 })
 
 export const WithdrawRequestSchema = z.object({

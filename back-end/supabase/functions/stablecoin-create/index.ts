@@ -40,6 +40,7 @@ serve(async (req: Request) => {
     const client_wallet = body.client_wallet as string
     const webhook = body.webhook as string
     const total_supply = body.total_supply as number
+    const cpf_cnpj = body.cpf_cnpj as string | undefined
 
     if (!client_name || typeof client_name !== "string") {
       return createErrorResponse("Missing or invalid client_name", 400)
@@ -93,6 +94,8 @@ serve(async (req: Request) => {
       const asaasClient = createAsaasClient()
       const customerResult = await asaasClient.createCustomer({
         name: client_name,
+        cpfCnpj: cpf_cnpj,
+        personType: cpf_cnpj && cpf_cnpj.replace(/\D/g, "").length === 14 ? "JURIDICA" : "FISICA",
       })
 
       asaasCustomerId = customerResult.id
