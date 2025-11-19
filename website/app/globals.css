@@ -126,3 +126,121 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Box Loader Animations */
+@keyframes box1 {
+  0%,
+    50% {
+    transform: translate(100%, 0);
+  }
+  100% {
+    transform: translate(200%, 0);
+  }
+}
+
+@keyframes box2 {
+  0% {
+    transform: translate(0, 100%);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(100%, 0);
+  }
+}
+
+@keyframes box3 {
+  0%,
+    50% {
+    transform: translate(100%, 100%);
+  }
+  100% {
+    transform: translate(0, 100%);
+  }
+}
+
+@keyframes box4 {
+  0% {
+    transform: translate(200%, 0);
+  }
+  50% {
+    transform: translate(200%, 100%);
+  }
+  100% {
+    transform: translate(100%, 100%);
+  }
+}
+
+/* Box Loader Styles */
+.boxes {
+  --size: 32px;
+  --duration: 800ms;
+  height: calc(var(--size) * 2);
+  width: calc(var(--size) * 3);
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  margin-top: calc(var(--size) * 1.5 * -1);
+  transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0px);
+}
+
+.box {
+  width: var(--size);
+  height: var(--size);
+  top: 0;
+  left: 0;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.box-1 {
+  transform: translate(100%, 0);
+  animation: box1 var(--duration) linear infinite;
+}
+
+.box-2 {
+  transform: translate(0, 100%);
+  animation: box2 var(--duration) linear infinite;
+}
+
+.box-3 {
+  transform: translate(100%, 100%);
+  animation: box3 var(--duration) linear infinite;
+}
+
+.box-4 {
+  transform: translate(200%, 0);
+  animation: box4 var(--duration) linear infinite;
+}
+
+.face {
+  --background: oklch(0.488 0.243 264.376);
+  --top: oklch(0.6 0.25 264.376);
+  --right: oklch(0.4 0.2 264.376);
+  width: var(--size);
+  height: var(--size);
+  position: absolute;
+  background: var(--background);
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.face-front {
+  transform: translateZ(calc(var(--size) / 2));
+}
+
+.face-right {
+  transform: rotateY(90deg) translateZ(calc(var(--size) / 2));
+  background: var(--right);
+}
+
+.face-top {
+  transform: rotateX(90deg) translateZ(calc(var(--size) / 2));
+  background: var(--top);
+}
+
+.face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--size) / 2));
+}
