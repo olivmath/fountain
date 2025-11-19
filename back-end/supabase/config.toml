@@ -17,3 +17,21 @@ verify_jwt = false
 
 [functions."hello-world"]
 verify_jwt = false
+
+[functions."list-client-stablecoins"]
+verify_jwt = false
+
+[functions."get-stablecoin-info"]
+verify_jwt = false
+
+[functions."list-stablecoin-operations"]
+verify_jwt = false
+
+[functions."list-client-operations"]
+verify_jwt = false
+
+[functions."get-operation-details"]
+verify_jwt = false
+
+[functions."get-stablecoin-stats"]
+verify_jwt = false
